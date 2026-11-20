@@ -1,0 +1,341 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isAuthenticated() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(ownerUid) {
+      return isAuthenticated() && request.auth.uid == ownerUid;
+    }
+
+    // Entity validation blueprints
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'githubUsername', 'avatarUrl', 'displayName', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'githubUsername', 'avatarUrl', 'displayName', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.uid == request.auth.uid
+        && data.githubUsername is string && data.githubUsername.size() <= 64
+        && data.avatarUrl is string && data.avatarUrl.size() <= 512
+        && data.displayName is string && data.displayName.size() <= 100
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidArtwork(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'githubUsername', 'title', 'selectedYear', 'cells', 'presetName', 'notes', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'githubUsername', 'title', 'selectedYear', 'cells', 'presetName', 'notes', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && data.ownerUid == request.auth.uid
+        && data.githubUsername is string && data.githubUsername.size() <= 64
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+        && data.selectedYear is int && data.selectedYear >= 2008 && data.selectedYear <= 2035
+        && data.cells is map && data.cells.size() <= 380
+        && data.presetName is string && data.presetName.size() <= 80
+        && data.notes is string && data.notes.size() <= 500
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCustomPreset(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'name', 'category', 'width', 'height', 'pixels', 'createdAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'name', 'category', 'width', 'height', 'pixels', 'createdAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && data.ownerUid == request.auth.uid
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 64
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 40
+        && data.width is int && data.width >= 1 && data.width <= 53
+        && data.height is int && data.height >= 1 && data.height <= 7
+        && data.pixels is list && data.pixels.size() > 0 && data.pixels.size() <= 400
+        && data.pixels[0] is string && data.pixels[0].size() <= 24
+        && data.createdAt is timestamp;
+    }
+
+    function isValidJobStatus(status) {
+      return status in ['queued', 'running', 'completed', 'cancelled', 'failed'];
+    }
+
+    function isTerminalJobStatus(status) {
+      return status in ['completed', 'cancelled', 'failed'];
+    }
+
+    function isValidPublishingJob(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'artworkId', 'repositoryName', 'totalItems', 'completedItems', 'status', 'lastError', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'artworkId', 'repositoryName', 'totalItems', 'completedItems', 'status', 'lastError', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && data.ownerUid == request.auth.uid
+        && isValidId(data.artworkId)
+        && data.repositoryName is string && data.repositoryName.size() >= 1 && data.repositoryName.size() <= 140
+        && data.totalItems is int && data.totalItems >= 0 && data.totalItems <= 5000
+        && data.completedItems is int && data.completedItems >= 0 && data.completedItems <= data.totalItems
+        && isValidJobStatus(data.status)
+        && data.lastError is string && data.lastError.size() <= 400
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSharedArtwork(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'githubUsername', 'title', 'selectedYear', 'cells', 'createdAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'githubUsername', 'title', 'selectedYear', 'cells', 'createdAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && data.ownerUid == request.auth.uid
+        && data.githubUsername is string && data.githubUsername.size() <= 64
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 120
+        && data.selectedYear is int && data.selectedYear >= 2008 && data.selectedYear <= 2035
+        && data.cells is map && data.cells.size() <= 380
+        && data.createdAt is timestamp;
+    }
+
+    function isValidRepositoryConnection(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'githubRepositoryId', 'repositoryName', 'owner', 'defaultBranch', 'isPrivate', 'htmlUrl', 'createdAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'githubRepositoryId', 'repositoryName', 'owner', 'defaultBranch', 'isPrivate', 'htmlUrl', 'createdAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && data.ownerUid == request.auth.uid
+        && data.githubRepositoryId is int && data.githubRepositoryId > 0
+        && data.repositoryName is string && data.repositoryName.size() >= 1 && data.repositoryName.size() <= 120
+        && data.owner is string && data.owner.size() >= 1 && data.owner.size() <= 64
+        && data.defaultBranch is string && data.defaultBranch.size() >= 1 && data.defaultBranch.size() <= 80
+        && data.isPrivate is bool
+        && data.htmlUrl is string && data.htmlUrl.size() <= 256
+        && data.createdAt is timestamp;
+    }
+
+    function isValidScheduleStatus(status) {
+      return status in ['scheduled', 'waiting_for_date', 'ready_for_review', 'publishing', 'published', 'failed', 'cancelled'];
+    }
+
+    function isTerminalScheduleStatus(status) {
+      return status in ['published', 'cancelled'];
+    }
+
+    function isValidContributionSchedule(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'repositoryId', 'artworkId', 'selectedDate', 'plannedCommitCount', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'repositoryId', 'artworkId', 'selectedDate', 'plannedCommitCount', 'status', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && data.ownerUid == request.auth.uid
+        && isValidId(data.repositoryId)
+        && isValidId(data.artworkId)
+        && data.selectedDate is string && data.selectedDate.size() == 10 && data.selectedDate.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.plannedCommitCount is int && data.plannedCommitCount >= 1 && data.plannedCommitCount <= 20
+        && isValidScheduleStatus(data.status)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidOperationStatus(status) {
+      return status in ['pending', 'confirmed', 'failed', 'cancelled'];
+    }
+
+    function isValidPublishingOperation(data) {
+      return data.keys().hasAll(['id', 'ownerUid', 'scheduleId', 'operationType', 'status', 'githubResultUrl', 'createdAt'])
+        && data.keys().hasOnly(['id', 'ownerUid', 'scheduleId', 'operationType', 'status', 'githubResultUrl', 'createdAt'])
+        && isValidId(data.id)
+        && isValidId(data.ownerUid)
+        && data.ownerUid == request.auth.uid
+        && isValidId(data.scheduleId)
+        && data.operationType is string && data.operationType.size() >= 1 && data.operationType.size() <= 64
+        && isValidOperationStatus(data.status)
+        && data.githubResultUrl is string && data.githubResultUrl.size() <= 300
+        && data.createdAt is timestamp;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isOwner(userId);
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(userId)
+        && userId == request.auth.uid
+        && isValidUserProfile(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(userId)
+        && resource != null
+        && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['githubUsername', 'avatarUrl', 'displayName', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // Artworks collection
+    match /artworks/{artworkId} {
+      allow get: if isValidId(artworkId) && resource != null && isOwner(existing().ownerUid);
+      allow list: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(artworkId)
+        && isValidArtwork(incoming())
+        && incoming().id == artworkId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser()
+        && isValidId(artworkId)
+        && resource != null
+        && isOwner(existing().ownerUid)
+        && isValidArtwork(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'selectedYear', 'githubUsername', 'cells', 'presetName', 'notes', 'updatedAt']);
+      allow delete: if isVerifiedUser()
+        && isValidId(artworkId)
+        && resource != null
+        && isOwner(existing().ownerUid);
+    }
+
+    // Custom presets collection
+    match /customPresets/{presetId} {
+      allow get: if isValidId(presetId) && resource != null && isOwner(existing().ownerUid);
+      allow list: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(presetId)
+        && isValidCustomPreset(incoming())
+        && incoming().id == presetId
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isVerifiedUser()
+        && isValidId(presetId)
+        && resource != null
+        && isOwner(existing().ownerUid);
+    }
+
+    // Publishing jobs collection
+    match /publishingJobs/{jobId} {
+      allow get: if isValidId(jobId) && resource != null && isOwner(existing().ownerUid);
+      allow list: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(jobId)
+        && isValidPublishingJob(incoming())
+        && incoming().id == jobId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/artworks/$(incoming().artworkId))
+        && get(/databases/$(database)/documents/artworks/$(incoming().artworkId)).data.ownerUid == request.auth.uid;
+      allow update: if isVerifiedUser()
+        && isValidId(jobId)
+        && resource != null
+        && isOwner(existing().ownerUid)
+        && !isTerminalJobStatus(existing().status)
+        && isValidPublishingJob(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().artworkId == existing().artworkId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['completedItems', 'status', 'lastError', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // Shared artworks collection
+    match /sharedArtworks/{shareId} {
+      allow get: if isValidId(shareId);
+      allow list: if false;
+      allow create: if isVerifiedUser()
+        && isValidId(shareId)
+        && isValidSharedArtwork(incoming())
+        && incoming().id == shareId
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isVerifiedUser()
+        && isValidId(shareId)
+        && resource != null
+        && isOwner(existing().ownerUid);
+    }
+
+    // Repository connections collection
+    match /repositoryConnections/{connectionId} {
+      allow get: if isValidId(connectionId) && resource != null && isOwner(existing().ownerUid);
+      allow list: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(connectionId)
+        && isValidRepositoryConnection(incoming())
+        && incoming().id == connectionId
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isVerifiedUser()
+        && isValidId(connectionId)
+        && resource != null
+        && isOwner(existing().ownerUid);
+    }
+
+    // Contribution schedules collection
+    match /contributionSchedules/{scheduleId} {
+      allow get: if isValidId(scheduleId) && resource != null && isOwner(existing().ownerUid);
+      allow list: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(scheduleId)
+        && isValidContributionSchedule(incoming())
+        && incoming().id == scheduleId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/repositoryConnections/$(incoming().repositoryId))
+        && get(/databases/$(database)/documents/repositoryConnections/$(incoming().repositoryId)).data.ownerUid == request.auth.uid;
+      allow update: if isVerifiedUser()
+        && isValidId(scheduleId)
+        && resource != null
+        && isOwner(existing().ownerUid)
+        && !isTerminalScheduleStatus(existing().status)
+        && isValidContributionSchedule(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().repositoryId == existing().repositoryId
+        && incoming().artworkId == existing().artworkId
+        && incoming().selectedDate == existing().selectedDate
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['plannedCommitCount', 'status', 'updatedAt']);
+      allow delete: if isVerifiedUser()
+        && isValidId(scheduleId)
+        && resource != null
+        && isOwner(existing().ownerUid);
+    }
+
+    // Publishing operations collection
+    match /publishingOperations/{operationId} {
+      allow get: if isValidId(operationId) && resource != null && isOwner(existing().ownerUid);
+      allow list: if isAuthenticated() && resource.data.ownerUid == request.auth.uid;
+      allow create: if isVerifiedUser()
+        && isValidId(operationId)
+        && isValidPublishingOperation(incoming())
+        && incoming().id == operationId
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/contributionSchedules/$(incoming().scheduleId))
+        && get(/databases/$(database)/documents/contributionSchedules/$(incoming().scheduleId)).data.ownerUid == request.auth.uid;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

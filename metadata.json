@@ -1,0 +1,6 @@
+{
+  "name": "GitPixel Studio",
+  "description": "Turn your GitHub contributions into pixel art. Paint, design, preview, export, and optionally publish disclosed contribution artwork.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

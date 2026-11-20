@@ -1,0 +1,171 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user profile linking Firebase Auth UID with optional GitHub identity metadata.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "githubUsername": { "type": "string", "maxLength": 64 },
+        "avatarUrl": { "type": "string", "maxLength": 512 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "githubUsername", "avatarUrl", "displayName", "createdAt", "updatedAt"]
+    },
+    "Artwork": {
+      "title": "Artwork",
+      "description": "Saved contribution graph pixel artwork project with native cell map.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "githubUsername": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "selectedYear": { "type": "integer" },
+        "cells": { "type": "object" },
+        "presetName": { "type": "string", "maxLength": 80 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "githubUsername", "title", "selectedYear", "cells", "presetName", "notes", "createdAt", "updatedAt"]
+    },
+    "CustomPreset": {
+      "title": "CustomPreset",
+      "description": "User-created reusable pixel art pattern.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "category": { "type": "string", "maxLength": 40 },
+        "width": { "type": "integer" },
+        "height": { "type": "integer" },
+        "pixels": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "name", "category", "width", "height", "pixels", "createdAt"]
+    },
+    "PublishingJob": {
+      "title": "PublishingJob",
+      "description": "Tracks explicit user-confirmed GitHub artwork publishing jobs without storing tokens.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "artworkId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "repositoryName": { "type": "string", "minLength": 1, "maxLength": 140 },
+        "totalItems": { "type": "integer" },
+        "completedItems": { "type": "integer" },
+        "status": { "type": "string", "enum": ["queued", "running", "completed", "cancelled", "failed"] },
+        "lastError": { "type": "string", "maxLength": 400 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "artworkId", "repositoryName", "totalItems", "completedItems", "status", "lastError", "createdAt", "updatedAt"]
+    },
+    "SharedArtwork": {
+      "title": "SharedArtwork",
+      "description": "Public read-only snapshot of an artwork for shareable preview links.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "githubUsername": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "selectedYear": { "type": "integer" },
+        "cells": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "githubUsername", "title", "selectedYear", "cells", "createdAt"]
+    },
+    "RepositoryConnection": {
+      "title": "RepositoryConnection",
+      "description": "Verified GitHub repository selected by the user for contribution artwork.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "githubRepositoryId": { "type": "integer" },
+        "repositoryName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "owner": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "defaultBranch": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "isPrivate": { "type": "boolean" },
+        "htmlUrl": { "type": "string", "maxLength": 256 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "githubRepositoryId", "repositoryName", "owner", "defaultBranch", "isPrivate", "htmlUrl", "createdAt"]
+    },
+    "ContributionSchedule": {
+      "title": "ContributionSchedule",
+      "description": "Per-date contribution artwork schedule linked to a repository connection and artwork.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "repositoryId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "artworkId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "selectedDate": { "type": "string", "minLength": 10, "maxLength": 10, "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+        "plannedCommitCount": { "type": "integer" },
+        "status": {
+          "type": "string",
+          "enum": ["scheduled", "waiting_for_date", "ready_for_review", "publishing", "published", "failed", "cancelled"]
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "repositoryId", "artworkId", "selectedDate", "plannedCommitCount", "status", "createdAt", "updatedAt"]
+    },
+    "PublishingOperation": {
+      "title": "PublishingOperation",
+      "description": "Individual verified GitHub publishing operation log entry linked to a contribution schedule.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "ownerUid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "scheduleId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "operationType": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "failed", "cancelled"] },
+        "githubResultUrl": { "type": "string", "maxLength": 300 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "ownerUid", "scheduleId", "operationType", "status", "githubResultUrl", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profiles indexed by Firebase UID."
+    },
+    "/artworks/{artworkId}": {
+      "schema": { "$ref": "#/entities/Artwork" },
+      "description": "User-owned contribution graph pixel artworks."
+    },
+    "/customPresets/{presetId}": {
+      "schema": { "$ref": "#/entities/CustomPreset" },
+      "description": "User-owned custom reusable pixel presets."
+    },
+    "/publishingJobs/{jobId}": {
+      "schema": { "$ref": "#/entities/PublishingJob" },
+      "description": "User-owned GitHub publishing job logs."
+    },
+    "/sharedArtworks/{shareId}": {
+      "schema": { "$ref": "#/entities/SharedArtwork" },
+      "description": "Public read-only artwork snapshots accessible by exact shareId."
+    },
+    "/repositoryConnections/{connectionId}": {
+      "schema": { "$ref": "#/entities/RepositoryConnection" },
+      "description": "User-owned verified GitHub repository connections."
+    },
+    "/contributionSchedules/{scheduleId}": {
+      "schema": { "$ref": "#/entities/ContributionSchedule" },
+      "description": "User-owned per-date contribution schedules."
+    },
+    "/publishingOperations/{operationId}": {
+      "schema": { "$ref": "#/entities/PublishingOperation" },
+      "description": "User-owned verified GitHub publishing operations."
+    }
+  }
+}
